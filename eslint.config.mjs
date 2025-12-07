@@ -337,6 +337,7 @@ export default [
     files: [
       '**/eslint.config.{js,mjs,ts}',
       'eslint.config.{js,mjs,ts}',
+      'prisma.config.ts',
     ],
     languageOptions: {
       parserOptions: {

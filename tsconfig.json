@@ -26,6 +26,7 @@
     }
   },
   "include": [
+    "prisma.config.ts",
     "src/**/*",
     "eslint.config.mjs",
     "process.d.ts"
