@@ -1,5 +1,7 @@
+import type { CODE } from '@/code';
+
 export interface ResponseType<TData> {
-  success: boolean;
+  code: typeof CODE[keyof typeof CODE];
   data: TData;
   error?: boolean;
   message?: string;

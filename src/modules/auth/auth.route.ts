@@ -1,5 +1,8 @@
 import type { FastifyPluginCallback } from 'fastify';
 
+import { CODE } from '@/code';
+import { userExampleData } from '@/libs/exampleData/userExampleData';
+
 import {
   signUp,
   signIn,
@@ -17,7 +20,8 @@ import {
   successResponseSchema,
   errorResponseSchema,
   userInfoResponseSchema,
-  nullResponseSchema
+  nullResponseSchema,
+  oneOfResponseSchema
 } from './auth.schema';
 
 export const authRoute: FastifyPluginCallback = (instance, _opts, done) => {
@@ -26,49 +30,41 @@ export const authRoute: FastifyPluginCallback = (instance, _opts, done) => {
     '/signup',
     {
       schema: {
-        description: '새로운 사용자를 등록합니다. 회원가입 성공 시 JWT 토큰이 쿠키에 자동으로 설정됩니다.',
+        description: '사용자 회원가입',
         summary: '회원가입',
         tags: [ 'Auth', ],
         body: signUpSchema,
         response: {
           200: {
-            description: '회원가입 성공',
-            ...successResponseSchema(userInfoResponseSchema),
+            description: '회원가입 응답',
+            ...oneOfResponseSchema([
+              successResponseSchema(userInfoResponseSchema),
+              errorResponseSchema,
+            ]),
             examples: [
               {
-                success: true,
-                data: {
-                  userNo: 1,
-                  emlAddr: 'user@example.com',
-                  userNm: '홍길동',
-                  userRole: 'USER',
-                  proflImg: null,
-                  userBiogp: null,
-                  useYn: 'Y',
-                  delYn: 'N',
-                  lastLgnDt: '2024-01-01T00:00:00Z',
-                  lastPswdChgDt: '2024-01-01T00:00:00Z',
-                  crtNo: null,
-                  crtDt: '2024-01-01T00:00:00Z',
-                  updtNo: null,
-                  updtDt: '2024-01-01T00:00:00Z',
-                  delNo: null,
-                  delDt: null,
-                },
+                code: CODE.CREATED,
+                data: userExampleData(),
                 error: false,
                 message: '회원가입이 완료되었습니다.',
               },
-            ],
-          },
-          400: {
-            description: '잘못된 요청',
-            ...errorResponseSchema,
-            examples: [
               {
-                success: false,
+                code: CODE.BAD_REQUEST,
                 data: null,
                 error: true,
                 message: '이미 등록된 이메일 주소입니다.',
+              },
+              {
+                code: CODE.CONFLICT,
+                data: null,
+                error: true,
+                message: '이미 등록된 사용자명입니다.',
+              },
+              {
+                code: CODE.INTERNAL_SERVER_ERROR,
+                data: null,
+                error: true,
+                message: '회원가입 중 오류가 발생했습니다.',
               },
             ],
           },
@@ -83,49 +79,41 @@ export const authRoute: FastifyPluginCallback = (instance, _opts, done) => {
     '/signin',
     {
       schema: {
-        description: '이메일과 비밀번호로 로그인합니다. 로그인 성공 시 JWT 토큰이 쿠키에 자동으로 설정됩니다.',
+        description: '로그인',
         summary: '로그인',
         tags: [ 'Auth', ],
         body: signInSchema,
         response: {
           200: {
-            description: '로그인 성공',
-            ...successResponseSchema(userInfoResponseSchema),
+            description: '로그인 응답',
+            ...oneOfResponseSchema([
+              successResponseSchema(userInfoResponseSchema),
+              errorResponseSchema,
+            ]),
             examples: [
               {
-                success: true,
-                data: {
-                  userNo: 1,
-                  emlAddr: 'user@example.com',
-                  userNm: '홍길동',
-                  userRole: 'USER',
-                  proflImg: null,
-                  userBiogp: null,
-                  useYn: 'Y',
-                  delYn: 'N',
-                  lastLgnDt: '2024-01-01T00:00:00Z',
-                  lastPswdChgDt: '2024-01-01T00:00:00Z',
-                  crtNo: null,
-                  crtDt: '2024-01-01T00:00:00Z',
-                  updtNo: null,
-                  updtDt: '2024-01-01T00:00:00Z',
-                  delNo: null,
-                  delDt: null,
-                },
+                code: CODE.SUCCESS,
+                data: userExampleData(),
                 error: false,
                 message: '로그인되었습니다.',
               },
-            ],
-          },
-          401: {
-            description: '인증 실패',
-            ...errorResponseSchema,
-            examples: [
               {
-                success: false,
+                code: CODE.UNAUTHORIZED,
                 data: null,
                 error: true,
                 message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+              },
+              {
+                code: CODE.FORBIDDEN,
+                data: null,
+                error: true,
+                message: '삭제된 계정입니다.',
+              },
+              {
+                code: CODE.INTERNAL_SERVER_ERROR,
+                data: null,
+                error: true,
+                message: '로그인 중 오류가 발생했습니다.',
               },
             ],
           },
@@ -140,32 +128,41 @@ export const authRoute: FastifyPluginCallback = (instance, _opts, done) => {
     '/refresh',
     {
       schema: {
-        description: '리프레시 토큰을 사용하여 새로운 액세스 토큰과 리프레시 토큰을 발급받습니다. 새 토큰은 쿠키에 자동으로 설정됩니다.',
+        description: '액세스/리프레시 토큰 재발급',
         summary: '토큰 리프레시',
         tags: [ 'Auth', ],
         body: refreshTokenSchema,
         response: {
           200: {
-            description: '토큰 갱신 성공',
-            ...successResponseSchema(nullResponseSchema),
+            description: '토큰 리프레시 응답',
+            ...oneOfResponseSchema([
+              successResponseSchema(nullResponseSchema),
+              errorResponseSchema,
+            ]),
             examples: [
               {
-                success: true,
+                code: CODE.SUCCESS,
                 data: null,
                 error: false,
                 message: '토큰이 갱신되었습니다.',
               },
-            ],
-          },
-          401: {
-            description: '인증 실패',
-            ...errorResponseSchema,
-            examples: [
               {
-                success: false,
+                code: CODE.UNAUTHORIZED,
                 data: null,
                 error: true,
                 message: '리프레시 토큰이 유효하지 않습니다.',
+              },
+              {
+                code: CODE.FORBIDDEN,
+                data: null,
+                error: true,
+                message: '사용 중지된 계정입니다.',
+              },
+              {
+                code: CODE.INTERNAL_SERVER_ERROR,
+                data: null,
+                error: true,
+                message: '토큰 리프레시 중 오류가 발생했습니다.',
               },
             ],
           },
@@ -180,49 +177,35 @@ export const authRoute: FastifyPluginCallback = (instance, _opts, done) => {
     '/me',
     {
       schema: {
-        description: '현재 로그인한 사용자의 세션 정보를 조회합니다. 쿠키의 액세스 토큰을 사용하여 인증합니다.',
+        description: '내 세션 정보 조회',
         summary: '현재 세션 조회',
         tags: [ 'Auth', ],
         security: [ { bearerAuth: [], }, ],
         response: {
           200: {
-            description: '세션 조회 성공',
-            ...successResponseSchema(userInfoResponseSchema),
+            description: '세션 조회 응답',
+            ...oneOfResponseSchema([
+              successResponseSchema(userInfoResponseSchema),
+              errorResponseSchema,
+            ]),
             examples: [
               {
-                success: true,
-                data: {
-                  userNo: 1,
-                  emlAddr: 'user@example.com',
-                  userNm: '홍길동',
-                  userRole: 'USER',
-                  proflImg: null,
-                  userBiogp: null,
-                  useYn: 'Y',
-                  delYn: 'N',
-                  lastLgnDt: '2024-01-01T00:00:00Z',
-                  lastPswdChgDt: '2024-01-01T00:00:00Z',
-                  crtNo: null,
-                  crtDt: '2024-01-01T00:00:00Z',
-                  updtNo: null,
-                  updtDt: '2024-01-01T00:00:00Z',
-                  delNo: null,
-                  delDt: null,
-                },
+                code: CODE.SUCCESS,
+                data: userExampleData(),
                 error: false,
                 message: '세션 정보를 조회했습니다.',
               },
-            ],
-          },
-          401: {
-            description: '인증 실패',
-            ...errorResponseSchema,
-            examples: [
               {
-                success: false,
+                code: CODE.UNAUTHORIZED,
                 data: null,
                 error: true,
                 message: '인증 토큰이 필요합니다.',
+              },
+              {
+                code: CODE.INTERNAL_SERVER_ERROR,
+                data: null,
+                error: true,
+                message: '세션 조회 중 오류가 발생했습니다.',
               },
             ],
           },
@@ -237,49 +220,41 @@ export const authRoute: FastifyPluginCallback = (instance, _opts, done) => {
     '/reset-password',
     {
       schema: {
-        description: '비밀번호를 잊은 경우 이메일 주소로 비밀번호를 재설정합니다.',
+        description: '비밀번호 재설정',
         summary: '비밀번호 재설정',
         tags: [ 'Auth', ],
         body: resetPasswordSchema,
         response: {
           200: {
-            description: '비밀번호 재설정 성공',
-            ...successResponseSchema(userInfoResponseSchema),
+            description: '비밀번호 재설정 응답',
+            ...oneOfResponseSchema([
+              successResponseSchema(userInfoResponseSchema),
+              errorResponseSchema,
+            ]),
             examples: [
               {
-                success: true,
-                data: {
-                  userNo: 1,
-                  emlAddr: 'user@example.com',
-                  userNm: '홍길동',
-                  userRole: 'USER',
-                  proflImg: null,
-                  userBiogp: null,
-                  useYn: 'Y',
-                  delYn: 'N',
-                  lastLgnDt: '2024-01-01T00:00:00Z',
-                  lastPswdChgDt: '2024-01-01T00:00:00Z',
-                  crtNo: null,
-                  crtDt: '2024-01-01T00:00:00Z',
-                  updtNo: null,
-                  updtDt: '2024-01-01T00:00:00Z',
-                  delNo: null,
-                  delDt: null,
-                },
+                code: CODE.SUCCESS,
+                data: userExampleData(),
                 error: false,
                 message: '비밀번호가 재설정되었습니다.',
               },
-            ],
-          },
-          404: {
-            description: '사용자를 찾을 수 없음',
-            ...errorResponseSchema,
-            examples: [
               {
-                success: false,
+                code: CODE.NOT_FOUND,
                 data: null,
                 error: true,
                 message: '해당 이메일 주소로 등록된 사용자를 찾을 수 없습니다.',
+              },
+              {
+                code: CODE.FORBIDDEN,
+                data: null,
+                error: true,
+                message: '삭제된 계정입니다.',
+              },
+              {
+                code: CODE.INTERNAL_SERVER_ERROR,
+                data: null,
+                error: true,
+                message: '비밀번호 재설정 중 오류가 발생했습니다.',
               },
             ],
           },
@@ -294,50 +269,36 @@ export const authRoute: FastifyPluginCallback = (instance, _opts, done) => {
     '/change-password',
     {
       schema: {
-        description: '로그인한 사용자가 현재 비밀번호를 확인하고 새 비밀번호로 변경합니다. 쿠키의 액세스 토큰을 사용하여 인증합니다.',
+        description: '비밀번호 변경',
         summary: '비밀번호 변경',
         tags: [ 'Auth', ],
         security: [ { bearerAuth: [], }, ],
         body: changePasswordSchema,
         response: {
           200: {
-            description: '비밀번호 변경 성공',
-            ...successResponseSchema(userInfoResponseSchema),
+            description: '비밀번호 변경 응답',
+            ...oneOfResponseSchema([
+              successResponseSchema(userInfoResponseSchema),
+              errorResponseSchema,
+            ]),
             examples: [
               {
-                success: true,
-                data: {
-                  userNo: 1,
-                  emlAddr: 'user@example.com',
-                  userNm: '홍길동',
-                  userRole: 'USER',
-                  proflImg: null,
-                  userBiogp: null,
-                  useYn: 'Y',
-                  delYn: 'N',
-                  lastLgnDt: '2024-01-01T00:00:00Z',
-                  lastPswdChgDt: '2024-01-01T00:00:00Z',
-                  crtNo: null,
-                  crtDt: '2024-01-01T00:00:00Z',
-                  updtNo: null,
-                  updtDt: '2024-01-01T00:00:00Z',
-                  delNo: null,
-                  delDt: null,
-                },
+                code: CODE.SUCCESS,
+                data: userExampleData(),
                 error: false,
                 message: '비밀번호가 변경되었습니다.',
               },
-            ],
-          },
-          401: {
-            description: '인증 실패',
-            ...errorResponseSchema,
-            examples: [
               {
-                success: false,
+                code: CODE.UNAUTHORIZED,
                 data: null,
                 error: true,
                 message: '현재 비밀번호가 올바르지 않습니다.',
+              },
+              {
+                code: CODE.INTERNAL_SERVER_ERROR,
+                data: null,
+                error: true,
+                message: '비밀번호 변경 중 오류가 발생했습니다.',
               },
             ],
           },

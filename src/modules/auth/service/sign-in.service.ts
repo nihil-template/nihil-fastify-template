@@ -1,6 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
+import { CODE } from '@/code';
+import { createServiceResponse } from '@/libs/createResponse';
+import type { ResponseType } from '@/modules/common/common.schema';
+
 import {
   findUserByEmail,
   updateRefreshToken,
@@ -16,24 +20,39 @@ import {
 export async function signIn(
   prisma: PrismaClient,
   data: SignInType
-): Promise<SignInResponse> {
+): Promise<ResponseType<SignInResponse | null>> {
   // 사용자 조회
   const user = await findUserByEmail(
     prisma,
     data.emlAddr
   );
   if (!user) {
-    throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
+    return createServiceResponse(
+      null,
+      '이메일 또는 비밀번호가 올바르지 않습니다.',
+      true,
+      CODE.UNAUTHORIZED
+    );
   }
 
   // 삭제된 사용자 확인
   if (user.delYn === 'Y') {
-    throw new Error('삭제된 계정입니다.');
+    return createServiceResponse(
+      null,
+      '삭제된 계정입니다.',
+      true,
+      CODE.FORBIDDEN
+    );
   }
 
   // 사용 중지된 사용자 확인
   if (user.useYn === 'N') {
-    throw new Error('사용 중지된 계정입니다.');
+    return createServiceResponse(
+      null,
+      '사용 중지된 계정입니다.',
+      true,
+      CODE.FORBIDDEN
+    );
   }
 
   // 비밀번호 확인
@@ -42,7 +61,12 @@ export async function signIn(
     user.encptPswd
   );
   if (!isPasswordValid) {
-    throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
+    return createServiceResponse(
+      null,
+      '이메일 또는 비밀번호가 올바르지 않습니다.',
+      true,
+      CODE.UNAUTHORIZED
+    );
   }
 
   // 토큰 생성
@@ -64,9 +88,14 @@ export async function signIn(
     user.userNo
   );
 
-  return {
-    user,
-    accessToken,
-    refreshToken: newRefreshToken,
-  };
+  return createServiceResponse(
+    {
+      user,
+      accessToken,
+      refreshToken: newRefreshToken,
+    },
+    '로그인 성공',
+    false,
+    CODE.SUCCESS
+  );
 }

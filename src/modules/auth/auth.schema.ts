@@ -114,15 +114,18 @@ export type RefreshTokenResponse = {
 
 // 응답 스키마
 export const successResponseSchema = <T extends Type.TSchema>(dataSchema: T) => Type.Object({
-  success: Type.Boolean({
-    description: '성공 여부',
-    examples: [ true, ],
+  code: Type.String({
+    description: '응답 코드',
+    examples: [
+      'SUCCESS',
+      'CREATED',
+    ],
   }),
   data: dataSchema,
-  error: Type.Boolean({
+  error: Type.Optional(Type.Boolean({
     description: '에러 여부',
     examples: [ false, ],
-  }),
+  })),
   message: Type.Optional(Type.String({
     description: '응답 메시지',
     examples: [ '요청이 성공적으로 처리되었습니다.', ],
@@ -130,20 +133,26 @@ export const successResponseSchema = <T extends Type.TSchema>(dataSchema: T) => 
 });
 
 export const errorResponseSchema = Type.Object({
-  success: Type.Boolean({
-    description: '성공 여부',
-    examples: [ false, ],
+  code: Type.String({
+    description: '응답 코드',
+    examples: [
+      'BAD_REQUEST',
+      'UNAUTHORIZED',
+      'INTERNAL_SERVER_ERROR',
+    ],
   }),
   data: Type.Null({ description: '에러 시 데이터는 null', }),
-  error: Type.Boolean({
+  error: Type.Optional(Type.Boolean({
     description: '에러 여부',
     examples: [ true, ],
-  }),
-  message: Type.String({
+  })),
+  message: Type.Optional(Type.String({
     description: '에러 메시지',
     examples: [ '요청 처리 중 오류가 발생했습니다.', ],
-  }),
+  })),
 });
+
+export const oneOfResponseSchema = (schemas: any[]) => Type.Union(schemas);
 
 // null 응답 스키마
 export const nullResponseSchema = Type.Null();

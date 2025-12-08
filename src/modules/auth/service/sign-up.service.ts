@@ -1,6 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
+import { CODE } from '@/code';
+import { createServiceResponse } from '@/libs/createResponse';
+import type { ResponseType } from '@/modules/common/common.schema';
+
 import {
   createUser,
   findUserByEmail,
@@ -16,14 +20,19 @@ import {
 export async function signUp(
   prisma: PrismaClient,
   data: SignUpType
-): Promise<SignUpResponse> {
+): Promise<ResponseType<SignUpResponse | null>> {
   // 이메일 중복 확인
   const existingUser = await findUserByEmail(
     prisma,
     data.emlAddr
   );
   if (existingUser) {
-    throw new Error('이미 등록된 이메일입니다.');
+    return createServiceResponse(
+      null,
+      '이미 등록된 이메일입니다.',
+      true,
+      CODE.CONFLICT
+    );
   }
 
   // 사용자명 중복 확인
@@ -31,7 +40,12 @@ export async function signUp(
     where: { userNm: data.userNm, },
   });
   if (existingUserNm) {
-    throw new Error('이미 등록된 사용자명입니다.');
+    return createServiceResponse(
+      null,
+      '이미 등록된 사용자명입니다.',
+      true,
+      CODE.CONFLICT
+    );
   }
 
   // 비밀번호 암호화
@@ -66,9 +80,14 @@ export async function signUp(
     newRefreshToken
   );
 
-  return {
-    user,
-    accessToken,
-    refreshToken: newRefreshToken,
-  };
+  return createServiceResponse(
+    {
+      user,
+      accessToken,
+      refreshToken: newRefreshToken,
+    },
+    '회원가입 성공',
+    false,
+    CODE.CREATED
+  );
 }
