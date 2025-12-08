@@ -9,7 +9,15 @@ import { prismaPlugin } from './plugins/prisma';
 
 export const buildApp = (): FastifyInstance => {
   const app = Fastify({
-    logger: true,
+    logger: {
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname',
+        },
+      },
+    },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
   app.register(cookie);
