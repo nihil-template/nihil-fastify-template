@@ -1,8 +1,14 @@
+import 'dotenv/config';
+
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { type FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
+import pg from 'pg';
 
-const prisma: PrismaClient = new PrismaClient();
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, });
+const adapter = new PrismaPg(pool);
+const prisma: PrismaClient = new PrismaClient({ adapter, });
 
 declare module 'fastify' {
   interface FastifyInstance {

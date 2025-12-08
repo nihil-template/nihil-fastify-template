@@ -10,7 +10,19 @@ const start = async () => {
       host: '0.0.0.0',
     });
 
-    server.log.info(`server listening on ${server.server.address()}`);
+    const address = server.server.address();
+    let addressString: string;
+    if (address === null) {
+      addressString = `0.0.0.0:${PORT}`;
+    }
+    else if (typeof address === 'string') {
+      addressString = address;
+    }
+    else {
+      addressString = `${address.address}:${address.port}`;
+    }
+
+    server.log.info(`server listening on ${addressString}`);
   }
   catch (error) {
     server.log.error(error);
